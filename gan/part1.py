@@ -14,10 +14,10 @@ from tensorflow.keras import (
 
 from utils import display, sample_batch
 
-IMAGE_SIZE = 64,
+IMAGE_SIZE = 64
 CHANNELS = 1
-BATCH_SIZE = 128,
-Z_DIM = 100,
+BATCH_SIZE = 128
+Z_DIM = 100
 EPOCHS = 300
 LOAD_MODEL = False
 ADAM_BETA_1 = 0.5
@@ -29,11 +29,11 @@ train_data = utils.image_dataset_from_directory(
     "../data/lego-brick-images/dataset",
     labels=None,
     color_mode="grayscale",
-    image_size = (IMAGE_SIZE, IMAGE_SIZE),
+    image_size=(IMAGE_SIZE, IMAGE_SIZE),
     batch_size=BATCH_SIZE,
     shuffle=True,
     seed=42,
-    interpolation="bilinear"
+    interpolation="bilinear",
 )
 
 def preprocess(img):
