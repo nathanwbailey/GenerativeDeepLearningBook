@@ -1,0 +1,7 @@
+venv
+downloaders
+download.sh
+format.sh
+tensorboard.sh
+*dataset*
+*.pyc
