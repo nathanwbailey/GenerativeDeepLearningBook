@@ -5,3 +5,4 @@ format.sh
 tensorboard.sh
 *dataset*
 *.pyc
+data
