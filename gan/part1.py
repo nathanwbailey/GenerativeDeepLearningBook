@@ -62,7 +62,7 @@ x = layers.LeakyReLU(0.2)(x)
 x = layers.Dropout(0.3)(x)
 x = layers.Conv2D(1, kernel_size=4, strides=1, padding="valid", use_bias=False, activation="sigmoid")(x)
 
-discriminator_output = layers.Flatten(x)
+discriminator_output = layers.Flatten()(x)
 discriminator = models.Model(discriminator_input, discriminator_output)
 discriminator.summary()
 
@@ -87,7 +87,7 @@ generator = models.Model(generator_input, generator_output)
 generator.summary()
 
 
-class DCGAN(keras.models.Model):
+class DCGAN(tf.keras.models.Model):
     # We don't actually need to overide the call method here as we overide train step
     def __init__(self, discriminator, generator, latent_dim):
         super().__init__()
@@ -97,7 +97,7 @@ class DCGAN(keras.models.Model):
 
     def compile(self, d_optimizer, g_optimizer):
         super().compile()
-        self.loss_fn = losses.BinaryCrossEntropy()
+        self.loss_fn = losses.BinaryCrossentropy()
         self.d_optimizer = d_optimizer
         self.g_optimizer = g_optimizer
         self.d_loss_metric = metrics.Mean(name="d_loss")
