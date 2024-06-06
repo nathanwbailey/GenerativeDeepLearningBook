@@ -21,12 +21,12 @@ BATCH_SIZE = 128
 NUM_FEATURES = 128
 Z_DIM = 200
 LEARNING_RATE = 0.0005
-EPOCHS = 10
+EPOCHS = 5
 BETA = 2000
 LOAD_MODEL = False
 
 train_data = utils.image_dataset_from_directory(
-    "../data/img_align_celeba",
+    "../data/celeba_dataset/img_align_celeba",
     labels=None,
     color_mode="rgb",
     image_size=(IMAGE_SIZE, IMAGE_SIZE),
@@ -170,8 +170,8 @@ batches_to_predict = 1
 example_images = np.array(list(train_data.take(batches_to_predict).get_single_element()))
 
 z_mean, z_log_var, reconstructions = vae.predict(example_images)
-display(example_images)
-display(reconstructions)
+display(example_images, save_to="part3/examples")
+display(reconstructions,save_to="part3/reconstructions")
 
 _, _, z = vae.encoder.predict(example_images)
 
@@ -189,6 +189,7 @@ for i in range(50):
     )
     ax.plot(x, norm.pdf(x))
 
+plt.savefig('part3/fig1')
 plt.show()
 
 grid_width, grid_height = (10, 3)
@@ -207,3 +208,5 @@ for i in range(grid_width * grid_height):
     ax = fig.add_subplot(grid_height, grid_width, i + 1)
     ax.axis("off")
     ax.imshow(reconstructions[i, :, :])
+
+plt.savefig('part3/fig2')

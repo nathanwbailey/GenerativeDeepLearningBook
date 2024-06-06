@@ -45,21 +45,15 @@ train_data = train_data.map(lambda x: preprocess(x))
 discriminator_input = layers.Input(shape=(IMAGE_SIZE, IMAGE_SIZE, CHANNELS))
 x = layers.Conv2D(64, kernel_size=4, strides=2, padding="same", use_bias=False)(discriminator_input)
 x = layers.LeakyReLU(0.2)(x)
-x = layers.Dropout(0.3)(x)
 x = layers.Conv2D(128, kernel_size=4, strides=2, padding="same", use_bias=False)(x)
 x = layers.BatchNormalization(momentum=0.9)(x)
 x = layers.LeakyReLU(0.2)(x)
-x = layers.Dropout(0.3)(x)
-x = layers.Dropout(0.3)(x)
 x = layers.Conv2D(128, kernel_size=4, strides=2, padding="same", use_bias=False)(x)
 x = layers.BatchNormalization(momentum=0.9)(x)
 x = layers.LeakyReLU(0.2)(x)
-x = layers.Dropout(0.3)(x)
-x = layers.Dropout(0.3)(x)
 x = layers.Conv2D(128, kernel_size=4, strides=2, padding="same", use_bias=False)(x)
 x = layers.BatchNormalization(momentum=0.9)(x)
 x = layers.LeakyReLU(0.2)(x)
-x = layers.Dropout(0.3)(x)
 x = layers.Conv2D(1, kernel_size=4, strides=1, padding="valid", use_bias=False, activation="sigmoid")(x)
 
 discriminator_output = layers.Flatten()(x)
@@ -67,7 +61,7 @@ discriminator = models.Model(discriminator_input, discriminator_output)
 discriminator.summary()
 
 generator_input = layers.Input(shape=(Z_DIM,))
-x = layers.Reshape((1, 1, Z_DIM))(generator_input)
+x = layers.Reshape((1, 1, Z_DIM))(generator_input)  
 x = layers.Conv2DTranspose(512, kernel_size=4, strides=1, padding="valid", use_bias=False)(x)
 x = layers.BatchNormalization(momentum=0.9)(x)
 x = layers.LeakyReLU(0.2)(x)
@@ -133,8 +127,8 @@ class DCGAN(tf.keras.models.Model):
             real_labels = tf.ones_like(real_predictions)
             real_noisy_labels = real_labels + NOISE_PARAM * tf.random.uniform(tf.shape(real_predictions))
 
-            fake_labels = tf.ones_like(fake_predictions)
-            fake_noisy_labels = fake_labels + NOISE_PARAM * tf.random.uniform(tf.shape(fake_predictions))
+            fake_labels = tf.zeros_like(fake_predictions)
+            fake_noisy_labels = fake_labels - NOISE_PARAM * tf.random.uniform(tf.shape(fake_predictions))
 
             d_real_loss = self.loss_fn(real_noisy_labels, real_predictions)
             d_fake_loss = self.loss_fn(fake_noisy_labels, fake_predictions)
@@ -158,6 +152,7 @@ class DCGAN(tf.keras.models.Model):
     
         # Update metrics
         self.d_loss_metric.update_state(d_loss)
+        print(d_loss)
         self.d_real_acc_metric.update_state(real_labels, real_predictions)
         self.d_fake_acc_metric.update_state(fake_labels, fake_predictions)
         self.d_acc_metric.update_state(
@@ -176,4 +171,80 @@ dcgan.compile(
     g_optimizer=optimizers.Adam(learning_rate=LEARNING_RATE, beta_1=ADAM_BETA_1, beta_2=ADAM_BETA_2)
 )
 
-dcgan.fit(train_data, epochs=EPOCHS)
+tensorboard_callback = callbacks.TensorBoard(log_dir='./logs')
+
+class ImageGenerator(callbacks.Callback):
+    def __init__(self, num_img, latent_dim):
+        self.num_img = num_img
+        self.latent_dim = latent_dim
+    
+    def on_epoch_end(self, epoch, logs=None):
+        random_latent_vectors = tf.random.normal(
+            shape=(self.num_img, self.latent_dim)
+        )
+        generated_images = self.model.generator(random_latent_vectors)
+        generated_images = (generated_images * 127.5 + 127.5).numpy()
+        display(
+            generated_images,
+            save_to="./output/generated_img_%03d.png" % (epoch),
+        )
+
+dcgan.fit(train_data, epochs=EPOCHS, callbacks=[tensorboard_callback,ImageGenerator(num_img=10, latent_dim=Z_DIM)])
+
+grid_width, grid_height = (10, 3)
+z_sample = np.random.normal(size=(grid_width * grid_height, Z_DIM))
+reconstructions = generator.predict(z_sample)
+
+
+fig = plt.figure(figsize=(18, 5))
+fig.subplots_adjust(hspace=0.4, wspace=0.4)
+for i in range(grid_width * grid_height):
+    ax = fig.add_subplot(grid_height, grid_width, i + 1)
+    ax.axis("off")
+    ax.imshow(reconstructions[i, :, :], cmap="Greys")
+
+plt.savefig('output/generated_images.png')
+
+
+def compare_images(img1, img2):
+    return np.mean(np.abs(img1 - img2))
+
+all_data = []
+for i in train_data.as_numpy_iterator():
+    all_data.extend(i)
+all_data = np.array(all_data)
+
+r, c = 3, 5
+fig, axs = plt.subplots(r, c, figsize=(10, 6))
+fig.suptitle("Generated images", fontsize=20)
+
+noise = np.random.normal(size=(r * c, Z_DIM))
+gen_imgs = generator.predict(noise)
+
+cnt = 0
+for i in range(r):
+    for j in range(c):
+        axs[i, j].imshow(gen_imgs[cnt], cmap="gray_r")
+        axs[i, j].axis("off")
+        cnt += 1
+
+plt.savefig('output/gen_images_closest.png')
+
+fig, axs = plt.subplots(r, c, figsize=(10, 6))
+fig.suptitle("Closest images in the training set", fontsize=20)
+
+cnt = 0
+for i in range(r):
+    for j in range(c):
+        c_diff = 99999
+        c_img = None
+        for k_idx, k in enumerate(all_data):
+            diff = compare_images(gen_imgs[cnt], k)
+            if diff < c_diff:
+                c_img = np.copy(k)
+                c_diff = diff
+        axs[i, j].imshow(c_img, cmap="gray_r")
+        axs[i, j].axis("off")
+        cnt += 1
+
+plt.savefig('output/real_images_closest.png')

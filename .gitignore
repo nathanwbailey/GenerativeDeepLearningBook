@@ -6,3 +6,7 @@ tensorboard.sh
 *dataset*
 *.pyc
 data
+*.ipynb
+*output*
+*logs*
+*models*
