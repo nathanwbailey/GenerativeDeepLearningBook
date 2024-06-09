@@ -204,16 +204,35 @@ class ImageGenerator(callbacks.Callback):
     def __init__(self, num_img, latent_dim):
         self.num_img = num_img
         self.latent_dim = latent_dim
-    
+
     def on_epoch_end(self, epoch, logs=None):
         random_latent_vectors = tf.random.normal(
             shape=(self.num_img, self.latent_dim)
         )
-        generated_images = self.model.generator(random_latent_vectors)
-        generated_images = (generated_images * 127.5 + 127.5).numpy()
+        # 0 label
+        zero_label = np.repeat([[1, 0]], self.num_img, axis=0)
+        generated_images = self.model.generator(
+            [random_latent_vectors, zero_label]
+        )
+        generated_images = generated_images * 127.5 + 127.5
+        generated_images = generated_images.numpy()
         display(
             generated_images,
-            save_to="./output_cgan/generated_img_%03d.png" % (epoch),
+            save_to="./output_cgan/generated_img_%03d_label_0.png" % (epoch),
+            cmap=None,
+        )
+
+        # 1 label
+        one_label = np.repeat([[0, 1]], self.num_img, axis=0)
+        generated_images = self.model.generator(
+            [random_latent_vectors, one_label]
+        )
+        generated_images = generated_images * 127.5 + 127.5
+        generated_images = generated_images.numpy()
+        display(
+            generated_images,
+            save_to="./output_cgan/generated_img_%03d_label_1.png" % (epoch),
+            cmap=None,
         )
 
 cgan.fit(train_data, epochs=EPOCHS, callbacks=[tensorboard_callback,ImageGenerator(num_img=10, latent_dim=Z_DIM)])
