@@ -15,7 +15,7 @@ EPOCHS = 150
 
 
 def preprocess(imgs_int):
-    imgs_int = np.exapnd_dims(imgs_int, -1)
+    imgs_int = np.expand_dims(imgs_int, -1)
     imgs_int = tf.image.resize(imgs_int, (IMAGE_SIZE, IMAGE_SIZE)).numpy()
     #Get values to range from 0-3
     imgs_int = (imgs_int / (256 / PIXEL_LEVELS)).astype(int)
@@ -58,7 +58,7 @@ class ResidualBlock(layers.Layer):
         super().__init__(**kwargs)
         self.conv1 = layers.Conv2D(filters=filters // 2, kernel_size=1, activation="relu")
         self.pixel_conv = MaskedConv2D(mask_type="B", filters = filters // 2, kernel_size=3, activation="relu", padding="same")
-        self.conv2 = layers.Conv2D = layers.Conv2D(filters=filters, kernel_size=1, activation="relu")
+        self.conv2 = layers.Conv2D(filters=filters, kernel_size=1, activation="relu")
         self.add_layer = layers.Add()
 
     
@@ -74,10 +74,10 @@ x = MaskedConv2D(mask_type="A", filters=N_FILTERS, kernel_size=7, activation="re
 for _ in range(RESIDUAL_BLOCKS):
     x = ResidualBlock(filters=N_FILTERS)(x)
 
-for _ in range(x):
+for _ in range(2):
     x = MaskedConv2D(mask_type="B", filters=N_FILTERS, kernel_size=1, padding="valid", activation="relu")(x)
 
-out = layers.Conv2D(filters=PIXEL_LEVELS, kernel_size=1, activation="softmax", padding="valid")
+out = layers.Conv2D(filters=PIXEL_LEVELS, kernel_size=1, activation="softmax", padding="valid")(x)
 pixel_cnn = models.Model(inputs, out)
 pixel_cnn.summary()
 
