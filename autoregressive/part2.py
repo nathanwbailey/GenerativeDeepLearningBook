@@ -118,7 +118,7 @@ class ImageGenerator(callbacks.Callback):
         )
 
 img_generator_callback = ImageGenerator(num_img=10)
-pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[img_generator_callback])
+pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[img_generator_callback], verbose=2)
 
 generated_images = img_generator_callback.generate(temperature=1.0)
 display(generated_images, save_to="./output/gen_images.png")
