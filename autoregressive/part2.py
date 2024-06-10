@@ -1,5 +1,6 @@
 import numpy as np
-
+import sys
+np.set_printoptions(threshold=sys.maxsize)
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models, optimizers, callbacks
 
@@ -15,18 +16,16 @@ EPOCHS = 150
 
 (x_train, _), (_, _) = datasets.fashion_mnist.load_data()
 
-
 def preprocess(imgs_int):
     imgs_int = np.expand_dims(imgs_int, -1)
-    imgs_int = tf.image.resize(imgs_int, (IMAGE_SIZE, IMAGE_SIZE)).numpy()
-    #Get values to range from 0-3
-    imgs_int = (imgs_int / (256 / PIXEL_LEVELS)).astype(int)
+    imgs_int = tf.image.resize(imgs_int, (IMAGE_SIZE, IMAGE_SIZE)).numpy().astype(np.uint8)
+    imgs_int = (imgs_int / (256 / PIXEL_LEVELS)).astype(np.uint8)
     imgs = imgs_int.astype("float32")
-    #Get them to range between 0-1
     imgs = imgs / PIXEL_LEVELS
     return imgs, imgs_int
 
 input_data, output_data = preprocess(x_train)
+display(input_data, save_to='./output/ex_imgs.png')
 
 class MaskedConv2D(layers.Layer):
     def __init__(self, mask_type, **kwargs):
@@ -42,7 +41,7 @@ class MaskedConv2D(layers.Layer):
         #F1xF2xDepth
         kernel_shape = self.conv.kernel.get_shape()
         self.mask = np.zeros(shape=kernel_shape)
-        self.mask[:, kernel_shape[0] // 2, ...] = 1.0
+        self.mask[:kernel_shape[0] // 2, ...] = 1.0
         self.mask[kernel_shape[0] // 2, :kernel_shape[1] // 2, ...] = 1.0
         if self.mask_type == "B":
             self.mask[kernel_shape[0] // 2, kernel_shape[1] // 2, ...] = 1.0
