@@ -3,6 +3,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models, optimizers, callbacks
 
+from utils import display
+
 
 IMAGE_SIZE = 16
 PIXEL_LEVELS = 4
@@ -81,6 +83,43 @@ out = layers.Conv2D(filters=PIXEL_LEVELS, kernel_size=1, activation="softmax", p
 pixel_cnn = models.Model(inputs, out)
 pixel_cnn.summary()
 
-# adam = optimizers.Adam(learning_rate=0.0005)
-# pixel_cnn.compile(optimizer=adam, loss="sparse_categorical_crossentropy")
-# pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS)
+adam = optimizers.Adam(learning_rate=0.0005)
+pixel_cnn.compile(optimizer=adam, loss="sparse_categorical_crossentropy")
+
+class ImageGenerator(callbacks.Callback):
+    def __init__(self, num_img):
+        self.num_img = num_img
+    
+    def sample_from(self, probs, temperature):
+        probs = probs ** (1 / temperature)
+        probs = probs / np.sum(probs)
+        return np.random.choice(len(probs), p=probs)
+
+    def generate(self, temperature):
+        generated_images = np.zeros(
+            shape=(self.num_img,) + (pixel_cnn.input_shape)[1:]
+        )
+        _, rows, cols, channels = generated_images.shape
+        for row in range(rows):
+            for col in range(cols):
+                for channel in range(channels):
+                    #Predict pixels one by one using the previously predicted pixels
+                    probs = self.model.predict(generated_images, verbose=0)[:, row, col, :]
+                    generated_images[:, row, col, channel] = [
+                        self.sample_from(x, temperature) for x in probs
+                    ]
+                    generated_images[:, row, col, channel] /= PIXEL_LEVELS
+        return generated_images
+    
+    def on_epoch_end(self, epoch, logs=None):
+        generated_images = self.generate(temperature=1.0)
+        display(
+            generated_images,
+            save_to="./output/generated_img_%03d.png" % (epoch),
+        )
+
+img_generator_callback = ImageGenerator(num_img=10)
+pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[img_generator_callback])
+
+generated_images = img_generator_callback.generate(temperature=1.0)
+display(generated_images, save_to="./output/gen_images.png")
