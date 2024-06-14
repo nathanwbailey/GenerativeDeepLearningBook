@@ -8,7 +8,7 @@ from utils import display
 
 IMAGE_SIZE = 32
 N_COMPONENTS = 5
-EPOCHS = 10
+EPOCHS = 50
 BATCH_SIZE = 128
 
 (x_train, _), (_, _) = datasets.fashion_mnist.load_data()
@@ -58,8 +58,8 @@ pixelcnn.fit(
     input_data,
     batch_size=BATCH_SIZE,
     epochs=EPOCHS,
-    verbose=True,
-    callbacks=[img_generator_callback]
+    verbose=2,
+    callbacks=[img_generator_callback],
 )
 
 generated_images = img_generator_callback.generate()

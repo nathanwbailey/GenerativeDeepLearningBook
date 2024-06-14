@@ -67,7 +67,7 @@ class RealNVP(models.Model):
         if training:
             direction = -1
         
-        for i in range(self.coupling_layers)[::-1]:
+        for i in range(self.coupling_layers)[::direction]:
             x_masked = x * self.masks[i]
             reversed_mask = 1 - self.masks[i]
             s, t = self.layers_list[i](x_masked)
