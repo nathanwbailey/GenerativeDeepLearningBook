@@ -42,6 +42,7 @@ class ImageGenerator(callbacks.Callback):
         self.num_img = num_img
     
     def generate(self):
+        # Sample num_images from the distribution that the model outputs
         return dist.sample(self.num_img).numpy()
     
     def on_epoch_end(self, epoch, logs=None):

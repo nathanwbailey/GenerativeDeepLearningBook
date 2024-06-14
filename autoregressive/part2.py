@@ -8,17 +8,17 @@ from utils import display
 
 
 IMAGE_SIZE = 16
-PIXEL_LEVELS = 4
+PIXEL_LEVELS = 32
 N_FILTERS = 128
 RESIDUAL_BLOCKS = 5
 BATCH_SIZE = 128
-EPOCHS = 150
+EPOCHS = 450
 
 (x_train, _), (_, _) = datasets.fashion_mnist.load_data()
 
 def preprocess(imgs_int):
     imgs_int = np.expand_dims(imgs_int, -1)
-    imgs_int = tf.image.resize(imgs_int, (IMAGE_SIZE, IMAGE_SIZE)).numpy().astype(np.uint8)
+    imgs_int = tf.image.resize(imgs_int, (IMAGE_SIZE, IMAGE_SIZE)).numpy()
     imgs_int = (imgs_int / (256 / PIXEL_LEVELS)).astype(np.uint8)
     imgs = imgs_int.astype("float32")
     imgs = imgs / PIXEL_LEVELS
@@ -82,7 +82,9 @@ out = layers.Conv2D(filters=PIXEL_LEVELS, kernel_size=1, activation="softmax", p
 pixel_cnn = models.Model(inputs, out)
 pixel_cnn.summary()
 
-adam = optimizers.Adam(learning_rate=0.0005)
+adam = optimizers.Adam(learning_rate=0.01)
+lr_scheduler = tf.keras.callbacks.ReduceLROnPlateau(monitor='loss', factor=0.1, patience=3, verbose=1, min_lr=1e-7, min_delta=1e-4)
+early_stopping = tf.keras.callbacks.EarlyStopping(monitor='loss', verbose=1, patience=10)
 pixel_cnn.compile(optimizer=adam, loss="sparse_categorical_crossentropy")
 
 class ImageGenerator(callbacks.Callback):
@@ -118,7 +120,7 @@ class ImageGenerator(callbacks.Callback):
         )
 
 img_generator_callback = ImageGenerator(num_img=10)
-pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[img_generator_callback], verbose=2)
+pixel_cnn.fit(input_data, output_data, batch_size=BATCH_SIZE, epochs=EPOCHS, callbacks=[lr_scheduler, early_stopping, img_generator_callback], verbose=2)
 
 generated_images = img_generator_callback.generate(temperature=1.0)
 display(generated_images, save_to="./output/gen_images.png")
