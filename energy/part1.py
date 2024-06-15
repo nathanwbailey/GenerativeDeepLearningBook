@@ -169,7 +169,7 @@ class ImageGenerator(callbacks.Callback):
     
     def on_epoch_end(self, epoch, logs=None):
         start_imgs = (
-            np.random.uniform(size=(self.num_ims, IMAGE_SIZE, IMAGE_SIZE, CHANNELS)) * 2 -1
+            np.random.uniform(size=(self.num_img, IMAGE_SIZE, IMAGE_SIZE, CHANNELS)) * 2 -1
         )
         generated_images = generate_samples(ebm_model.model, start_imgs, steps=1000, step_size=STEP_SIZE, noise=NOISE, return_img_per_step=False)
         generated_images = generated_images.numpy()

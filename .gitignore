@@ -1,8 +1,8 @@
 venv
 downloaders
-download.sh
 format.sh
 tensorboard.sh
+download*.sh
 *dataset*
 *.pyc
 data
