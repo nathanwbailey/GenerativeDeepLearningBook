@@ -53,7 +53,7 @@ class ImageGenerator(callbacks.Callback):
             save_to="./output_3/generated_img_%03d.png" % (epoch),
         )
 
-img_generator_callback = ImageGenerator(num_img=2)
+img_generator_callback = ImageGenerator(num_img=10)
 pixelcnn.fit(
     input_data,
     batch_size=BATCH_SIZE,
