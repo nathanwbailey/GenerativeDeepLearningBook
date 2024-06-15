@@ -56,25 +56,25 @@ model.summary()
 if LOAD_MODEL:
     model.load_weights("./models/model.h5")
 
-def generate_samples(model, inp_imgs, steps, step_size, noise, return_img_per_step=False):
+def generate_samples(model, input_imgs, steps, step_size, noise, return_img_per_step=False):
     imgs_per_step = []
     for _ in range(steps):
         #Add some noise to the images
-        inp_imgs += tf.random.normal(inp_imgs.shape, mean = 0, stddev=noise)
-        inp_imgs = tf.clip_by_value(inp_imgs, -1.0, 1.0)
+        input_imgs += tf.random.normal(input_imgs.shape, mean = 0, stddev=noise)
+        input_imgs = tf.clip_by_value(input_imgs, -1.0, 1.0)
         with tf.GradientTape() as tape:
-            #inp_imgs are not parameters of the model, so we must watch them
-            tape.watch(inp_imgs)
-            out_score = model(inp_imgs)
-        grads = tape.gradient(out_score, inp_imgs)
+            #input_imgs are not parameters of the model, so we must watch them
+            tape.watch(input_imgs)
+            out_score = model(input_imgs)
+        grads = tape.gradient(out_score, input_imgs)
         grads = tf.clip_by_value(grads, -GRADIENT_CLIP, GRADIENT_CLIP)
-        inp_imgs += step_size * grads
-        inp_imgs = tf.clip_by_value(inp_imgs, -1.0, 1.0)
+        input_imgs += step_size * grads
+        input_imgs = tf.clip_by_value(input_imgs, -1.0, 1.0)
         if return_img_per_step:
-            imgs_per_step.append(inp_imgs)
+            imgs_per_step.append(input_imgs)
     if return_img_per_step:
         return tf.stack(imgs_per_step, axis=0)
-    return inp_imgs
+    return input_imgs
 
 class Buffer:
     def __init__(self, model):
@@ -93,13 +93,13 @@ class Buffer:
         n_new = np.random.binomial(BATCH_SIZE, 0.05)
         rand_imgs = (tf.random.uniform(shape=(n_new, IMAGE_SIZE, IMAGE_SIZE, CHANNELS)) * 2 - 1)
         old_imgs = tf.concat(random.choices(self.examples, k=BATCH_SIZE - n_new), axis=0)
-        inp_imgs = tf.concat([rand_imgs, old_imgs], axis=0)
-        inp_imgs = generate_samples(self.model, inp_imgs, steps=steps, step_size=step_size, noise=noise)
+        input_imgs = tf.concat([rand_imgs, old_imgs], axis=0)
+        input_imgs = generate_samples(self.model, input_imgs, steps=steps, step_size=step_size, noise=noise)
         #Add generated examples to the buffer
-        self.examples = tf.split(inp_imgs, BATCH_SIZE, axis=0) + self.examples
+        self.examples = tf.split(input_imgs, BATCH_SIZE, axis=0) + self.examples
         #Limit the size of the buffer
         self.examples = self.examples[:BUFFER_SIZE]
-        return inp_imgs
+        return input_imgs
 
 class EBM(models.Model):
     def __init__(self):
@@ -160,7 +160,7 @@ class EBM(models.Model):
     
 
 ebm_model = EBM()
-ebm_model.compile(optimizer=optimizers.Adam(learning_rate=LEARNING_RATE))
+ebm_model.compile(optimizer=optimizers.Adam(learning_rate=LEARNING_RATE), run_eagerly=True)
 
 
 class ImageGenerator(callbacks.Callback):
@@ -194,6 +194,7 @@ ebm_model.fit(
     callbacks=[
         image_generator_callback,
     ],
+    verbose=2
 )
 
 start_imgs = (
