@@ -91,10 +91,7 @@ class Buffer:
         # Get a number between 0 and 32, mean is 32*0.05 = 1.6
         # So on average 5% of samples are random
         n_new = np.random.binomial(BATCH_SIZE, 0.05)
-        print(n_new)
-        rand_imgs = [
-            tf.random.uniform(shape=(n_new, IMAGE_SIZE, IMAGE_SIZE, CHANNELS)) * 2 - 1
-        ]
+        rand_imgs = (tf.random.uniform(shape=(n_new, IMAGE_SIZE, IMAGE_SIZE, CHANNELS)) * 2 - 1)
         old_imgs = tf.concat(random.choices(self.examples, k=BATCH_SIZE - n_new), axis=0)
         inp_imgs = tf.concat([rand_imgs, old_imgs], axis=0)
         inp_imgs = generate_samples(self.model, inp_imgs, steps=steps, step_size=step_size, noise=noise)
@@ -140,7 +137,7 @@ class EBM(models.Model):
             reg_loss = self.alpha * tf.reduce_mean(real_out**2 + fake_out**2, axis=0)
             loss = cdiv_loss + reg_loss
         grads = training_tape.gradient(loss, self.model.trainable_variables)
-        self.optimizer.apply_graidents(zip(grads, self.model.trainable_variables))
+        self.optimizer.apply_gradients(zip(grads, self.model.trainable_variables))
         self.loss_metric.update_state(loss)
         self.reg_loss_metric.update_state(reg_loss)
         self.cdiv_loss_metric.update_state(cdiv_loss)
