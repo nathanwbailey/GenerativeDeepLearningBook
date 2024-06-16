@@ -243,18 +243,6 @@ class DiffusionModel(models.Model):
         
         return {m.name: m.result() for m in self.metrics}
 
-    def test_step(self, images):
-        images = self.normalizer(images, training=False)
-        noises = tf.random.normal(shape=(BATCH_SIZE, IMAGE_SIZE, IMAGE_SIZE, 3))
-        diffusion_times = tf.random.uniform(shape=(BATCH_SIZE, 1, 1, 1,), minval=0.0, maxval=1.0)
-        noise_rates, signal_rates = self.diffusion_schedule(diffusion_times)
-        noisy_images = signal_rates * images + noise_rates * noises
-        pred_noises, _ = self.denoise(noisy_images, noise_rates, signal_rates, training=True)
-        noise_loss = self.loss(noises, pred_noises)
-        self.noise_loss_tracker.update_state(noise_loss)
-        return {m.name: m.result() for m in self.metrics}
-
-
     
 
 model = DiffusionModel()
