@@ -4,9 +4,8 @@ import string
 
 import numpy as np
 import tensorflow as tf
+from IPython.display import HTML, display
 from tensorflow.keras import callbacks, layers, losses, models
-from IPython.display import display, HTML
-
 
 VOCAB_SIZE = 10000
 MAX_LEN = 80
@@ -222,9 +221,11 @@ class TokenAndPositionEmbedding(layers.Layer):
 
 
 # Transformer Model
-inputs = layers.Input(shape=(None, ), dtype=tf.int32)
+inputs = layers.Input(shape=(None,), dtype=tf.int32)
 x = TokenAndPositionEmbedding(MAX_LEN, VOCAB_SIZE, EMBEDDING_DIM)(inputs)
-x, attention_scores = TransformerBlock(N_HEADS, KEY_DIM, EMBEDDING_DIM, FEED_FORWARD_DIM)(x)
+x, attention_scores = TransformerBlock(
+    N_HEADS, KEY_DIM, EMBEDDING_DIM, FEED_FORWARD_DIM
+)(x)
 outputs = layers.Dense(VOCAB_SIZE, activation="softmax")(x)
 
 gpt_model = models.Model(inputs=inputs, outputs=[outputs, attention_scores])
@@ -236,13 +237,14 @@ gpt_model.summary()
 class TextGenerator(callbacks.Callback):
     def __init__(self, index_to_word):
         self.index_to_word = index_to_word
-        self.word_to_index = {word: index for index, word in enumerate(index_to_word)}
+        self.word_to_index = {
+            word: index for index, word in enumerate(index_to_word)
+        }
 
     def sample_from(self, probs, temp):
         probs = probs ** (1 / temp)
         probs = probs / np.sum(probs)
         return np.random.choice(len(probs), p=probs), probs
-
 
     def generate(self, start_prompt, max_tokens, temp):
         start_tokens = [
@@ -250,6 +252,7 @@ class TextGenerator(callbacks.Callback):
         ]
         sample_token = None
         info = []
+        # 0 is stop token
         while len(start_tokens) < max_tokens and sample_token != 0:
             x = np.array([start_tokens])
             y, att = self.model.predict(x, verbose=0)
@@ -258,6 +261,10 @@ class TextGenerator(callbacks.Callback):
                 {
                     "prompt": start_prompt,
                     "word_probs": probs,
+                    # Get the attention scores for the prediction
+                    # -1 as we get an attention score
+                    # if each word was used as a query
+                    # So we want the last one
                     "atts": att[0, :, -1, :],
                 }
             )
@@ -266,10 +273,8 @@ class TextGenerator(callbacks.Callback):
         print(f"\ngenerated text:\n{start_prompt}\n")
         return info
 
-
     def on_epoch_end(self, epoch, logs=None):
         self.generate("wine review", max_tokens=80, temp=1.0)
-
 
 
 text_generator = TextGenerator(vocab)
@@ -300,13 +305,9 @@ def print_probs(info, vocab, top_k=5):
         print("--------\n")
 
 
-info = text_generator.generate(
-    "wine review : us", max_tokens=80, temp=1.0
-)
+info = text_generator.generate("wine review : us", max_tokens=80, temp=1.0)
 
-info = text_generator.generate(
-    "wine review : italy", max_tokens=80, temp=0.5
-)
+info = text_generator.generate("wine review : italy", max_tokens=80, temp=0.5)
 
 info = text_generator.generate(
     "wine review : germany", max_tokens=80, temp=0.5
