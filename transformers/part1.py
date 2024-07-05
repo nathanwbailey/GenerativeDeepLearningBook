@@ -4,7 +4,6 @@ import string
 
 import numpy as np
 import tensorflow as tf
-from IPython.display import HTML, display
 from tensorflow.keras import callbacks, layers, losses, models
 
 VOCAB_SIZE = 10000
@@ -17,7 +16,7 @@ VALIDATION_SPLIT = 0.2
 SEED = 42
 LOAD_MODEL = False
 BATCH_SIZE = 32
-EPOCHS = 20
+EPOCHS = 5
 
 
 with open(
@@ -28,7 +27,7 @@ with open(
 # print(wine_data[10])
 
 # filtered_data = [
-#     f"wine_review : {x['country']} : "
+#     f"wine review : {x['country']} : "
 #     f"{x['province']} : {x['variety']} : {x['description']}"
 #     for x in wine_data
 #     if all(
@@ -42,7 +41,7 @@ with open(
 # ]
 
 filtered_data = [
-    f"wine_review : {country} : {province} : {variety} : {description}"
+    f"wine review : {country} : {province} : {variety} : {description}"
     for x in wine_data
     if all(
         (
@@ -62,7 +61,7 @@ print(filtered_data[10])
 
 
 def pad_punctuation(s):
-    s = re.sub(f"([{string.punctuation}, '\n'])", r" \1", s)
+    s = re.sub(f"([{string.punctuation}, '\n'])", r" \1 ", s)
     s = re.sub(" +", " ", s)
     return s
 
@@ -86,8 +85,9 @@ vectorize_layer.adapt(text_dataset)
 vocab = vectorize_layer.get_vocabulary()
 
 assert len(vocab) <= VOCAB_SIZE
-
-print(vectorize_layer(filtered_data[10]).numpy())
+# print(vocab)
+# print(text_data[10])
+# print(vectorize_layer(filtered_data[10]).numpy())
 
 
 def prepare_inputs(text):
@@ -278,38 +278,10 @@ class TextGenerator(callbacks.Callback):
 
 
 text_generator = TextGenerator(vocab)
-gpt_model.fit(train_dataset, epochs=EPOCHS, callbacks=[text_generator])
-
-
-def print_probs(info, vocab, top_k=5):
-    for i in info:
-        highlighted_text = []
-        for word, att_score in zip(
-            i["prompt"].split(), np.mean(i["atts"], axis=0)
-        ):
-            highlighted_text.append(
-                '<span style="background-color:rgba(135,206,250,'
-                + str(att_score / max(np.mean(i["atts"], axis=0)))
-                + ');">'
-                + word
-                + "</span>"
-            )
-        highlighted_text = " ".join(highlighted_text)
-        display(HTML(highlighted_text))
-
-        word_probs = i["word_probs"]
-        p_sorted = np.sort(word_probs)[::-1][:top_k]
-        i_sorted = np.argsort(word_probs)[::-1][:top_k]
-        for p, i in zip(p_sorted, i_sorted):
-            print(f"{vocab[i]}:   \t{np.round(100*p,2)}%")
-        print("--------\n")
-
+gpt_model.fit(train_dataset, epochs=EPOCHS, callbacks=[text_generator], verbose=2)
 
 info = text_generator.generate("wine review : us", max_tokens=80, temp=1.0)
-
 info = text_generator.generate("wine review : italy", max_tokens=80, temp=0.5)
-
 info = text_generator.generate(
     "wine review : germany", max_tokens=80, temp=0.5
 )
-print_probs(info, vocab)
